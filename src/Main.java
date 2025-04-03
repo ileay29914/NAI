@@ -3,37 +3,68 @@ import java.util.*;
 public class Main {
     public static void main(String[] args) {
         try {
-            // Verileri yükle
+            //   Load training and test data
             List<LabeledText> trainData = CSVReader.loadData("lang.train.csv");
             List<LabeledText> testData = CSVReader.loadData("lang.test.csv");
 
-            // Veride geçen dilleri belirle
+            System.out.println(" Training samples: " + trainData.size());
+            System.out.println(" Test samples: " + testData.size());
+
+            //   Detect unique languages from training data
             Set<String> languages = new HashSet<>();
             for (LabeledText lt : trainData) {
                 languages.add(lt.language);
             }
+            System.out.println(" Detected languages: " + languages + "\n");
 
-            // LanguageDetector oluştur (linear aktivasyon, öğrenme oranı 0.1)
-            LanguageDetector detector = new LanguageDetector(languages, true, 0.1);
+            //   Create the LanguageDetector
+            int epochs = 10;
+            double learningRate = 0.1;
+            boolean useLinear = true;
 
-            // Eğit
-            System.out.println("Eğitim başlıyor...");
-            detector.train(trainData, 10);
-            System.out.println("Eğitim tamamlandı.");
+            LanguageDetector detector = new LanguageDetector(languages, useLinear, learningRate);
 
-            // Test doğruluğunu hesapla
+            //   Train the network
+            System.out.println(" Training started... (Epochs: " + epochs + ")");
+            detector.train(trainData, epochs);
+            System.out.println(" Training complete.\n");
+
+            //  5. Evaluate on test data
             double accuracy = detector.evaluate(testData);
-            System.out.printf("Test doğruluğu: %.2f%%\n", accuracy);
+            System.out.printf(" Test accuracy: %.2f%%\n", accuracy);
 
-            // Kullanıcıdan metin al ve tahmin et
+            //   Display incorrect predictions
+            System.out.println("\n Incorrect predictions:\n");
+
+            int correct = 0;
+            int total = testData.size();
+
+            for (LabeledText lt : testData) {
+                String predicted = detector.predict(lt.text);
+                if (predicted.equals(lt.language)) {
+                    correct++;
+                } else {
+                    System.out.println("• Text: \"" + lt.text + "\"");
+                    System.out.println("   Actual: " + lt.language + ", Predicted: " + predicted + "\n");
+                }
+            }
+
+            int incorrect = total - correct;
+            System.out.println(" Correct predictions: " + correct + "/" + total);
+            System.out.println(" Incorrect predictions: " + incorrect + "/" + total);
+
+            // Interactive user input
             Scanner scanner = new Scanner(System.in);
+            System.out.println("\n You can now enter custom text to predict its language.");
+            System.out.println("(Type 'exit' to quit.)");
+
             while (true) {
-                System.out.print("\nBir metin girin (çıkmak için 'exit'): ");
+                System.out.print(" Enter text: ");
                 String input = scanner.nextLine();
                 if (input.equalsIgnoreCase("exit")) break;
 
                 String prediction = detector.predict(input);
-                System.out.println("Tahmin edilen dil: " + prediction);
+                System.out.println(" Predicted language: " + prediction + "\n");
             }
 
         } catch (Exception e) {
@@ -41,3 +72,4 @@ public class Main {
         }
     }
 }
+
